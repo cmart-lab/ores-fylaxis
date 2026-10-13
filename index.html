@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Ώρες φύλαξης</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#f3f5fa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10131a" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+  :root{
+    --bg:#f3f5fa; --card:#ffffff; --text:#1b2233; --muted:#6b7487; --faint:#c9cfdb; --line:#e4e8f0;
+    --accent:#4472C4; --accent-soft:#e7eefb; --accent-text:#ffffff;
+    --we:#fde3ce; --we-text:#8a4a12;
+    --ok:#1d8a4b; --ok-soft:#e1f3e8; --warn:#a85f00; --warn-soft:#fff0d4;
+    --shadow:0 1px 3px rgba(20,30,60,.07);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#10131a; --card:#1a1f2d; --text:#e9ecf3; --muted:#9aa3b6; --faint:#475069; --line:#2a3145;
+      --accent:#6f97e0; --accent-soft:#223050; --accent-text:#0e1320;
+      --we:#3a2a1d; --we-text:#f2b987;
+      --ok:#62d08f; --ok-soft:#1b3527; --warn:#f2b54f; --warn-soft:#3a2d15;
+      --shadow:none;
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;font-size:16px}
+  body{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+  button{font:inherit;color:inherit;cursor:pointer}
+
+  .top{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
+    padding:calc(14px + env(safe-area-inset-top)) 16px 10px;background:var(--bg)}
+  .title{font-size:20px;font-weight:700;letter-spacing:-.2px}
+  .iconbtn{border:0;background:var(--card);width:42px;height:42px;border-radius:12px;display:grid;place-items:center;box-shadow:var(--shadow)}
+  .iconbtn svg{width:20px;height:20px}
+  .iconbtn.spin svg{animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  main{padding:0 16px;max-width:520px;margin:0 auto}
+  .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+  .label{color:var(--muted);font-size:14px}
+  .nums{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;gap:12px}
+  .big{font-size:30px;font-weight:700;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+  .unit{font-size:15px;color:var(--muted);margin-left:6px;font-weight:500}
+
+  .weeknav{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+  .navbtn{width:46px;height:46px;border-radius:12px;border:0;background:var(--card);font-size:24px;line-height:1;box-shadow:var(--shadow)}
+  .navbtn:disabled{opacity:.3;cursor:default}
+  .wk{text-align:center}
+  .wk .range{font-weight:650;font-size:17px}
+  .wk .tot{font-size:13px;color:var(--muted);margin-top:2px}
+
+  .days{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .day{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:14px;padding:10px 14px;
+    min-height:62px;cursor:pointer;border:2px solid transparent;box-shadow:var(--shadow);user-select:none}
+  .day:active:not(.future){transform:scale(.99)}
+  .day.we{background:var(--we)}
+  .day.we .dname{color:var(--we-text);font-weight:700}
+  .day.today{border-color:var(--accent)}
+  .day.future{opacity:.45;cursor:default}
+  .dleft{flex:0 0 100px}
+  .dname{font-weight:600}
+  .ddate{font-size:13px;color:var(--muted)}
+  .ddate b{color:var(--accent);font-weight:600}
+  .dcomment{flex:1;min-width:0;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dhours{font-weight:700;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .dhours .pill{display:inline-block;background:var(--accent-soft);color:var(--accent);padding:6px 11px;border-radius:999px}
+  .dhours.empty{color:var(--faint);font-weight:500;font-size:22px;padding-right:6px}
+  .todaylink{display:block;margin:14px auto 0;border:0;background:none;color:var(--accent);font-weight:600;padding:8px 12px}
+
+  .owe .nums{align-items:center}
+  .owe .sub{font-size:14px;color:var(--muted)}
+  .months{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .month{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+  .mleft{flex:1;min-width:0}
+  .mname{font-weight:600}
+  .msub{font-size:13px;color:var(--muted)}
+  .meur{font-weight:700;font-variant-numeric:tabular-nums}
+  .paid{border:0;border-radius:999px;padding:8px 12px;font-size:13px;font-weight:650;white-space:nowrap;min-width:108px}
+  .paid.yes{background:var(--ok-soft);color:var(--ok)}
+  .paid.no{background:var(--warn-soft);color:var(--warn)}
+  .paid:disabled{opacity:.4;cursor:default}
+  .note{font-size:13px;color:var(--muted);text-align:center;margin:18px 8px}
+
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    background:var(--bg);border-top:1px solid var(--line)}
+  .tabs button{flex:1;height:48px;border:0;border-radius:12px;background:transparent;font-weight:600;color:var(--muted)}
+  .tabs button.active{background:var(--accent-soft);color:var(--accent)}
+
+  .sheet{position:fixed;inset:0;z-index:20;display:none}
+  .sheet.open{display:block}
+  .backdrop{position:absolute;inset:0;background:rgba(10,14,25,.45);animation:fade .15s ease}
+  .panel{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--card);
+    border-radius:20px 20px 0 0;padding:10px 16px calc(18px + env(safe-area-inset-bottom));animation:up .2s ease}
+  @keyframes up{from{transform:translateY(40px);opacity:.6}}
+  @keyframes fade{from{opacity:0}}
+  .grab{width:40px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 12px}
+  .stitle{font-size:18px;font-weight:700;margin-bottom:12px}
+  .stitle span{color:var(--muted);font-weight:500}
+  .chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .chip{height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-size:17px;font-weight:650;font-variant-numeric:tabular-nums}
+  .chip.sel{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+  .clear{width:100%;margin-top:10px;height:46px;border-radius:12px;border:1.5px dashed var(--faint);background:transparent;color:var(--muted);font-weight:600}
+  .clabel{display:block;font-size:13px;color:var(--muted);margin:16px 0 6px}
+  .crow{display:flex;gap:8px}
+  .crow input{flex:1;min-width:0;height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--text);padding:0 12px;font:inherit}
+  .crow input:focus{outline:none;border-color:var(--accent)}
+  .crow button{border:0;border-radius:12px;background:var(--accent);color:var(--accent-text);font-weight:650;padding:0 18px}
+
+  .toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);
+    background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;
+    opacity:0;pointer-events:none;transition:.2s;z-index:30;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .loading{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:var(--bg);color:var(--muted);font-weight:600}
+  .loading[hidden]{display:none}
+  .keyscreen{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:24px;background:var(--bg)}
+  .keyscreen h2{margin:0;font-size:22px}
+  .keyscreen p{margin:0;color:var(--muted);line-height:1.45}
+  .keyscreen input{height:50px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--text);padding:0 14px;font:inherit}
+  .keyscreen button{height:50px;border:0;border-radius:12px;background:var(--accent);color:var(--accent-text);font-weight:650}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="title">Ώρες φύλαξης</div>
+    <button class="iconbtn" id="refresh" aria-label="Ανανέωση">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section id="tab-week">
+      <div class="card">
+        <div class="label" id="mLabel"></div>
+        <div class="nums">
+          <div><span class="big" id="mHours">0</span><span class="unit" id="mUnit">ώρες</span></div>
+          <div class="big" id="mEuro"></div>
+        </div>
+      </div>
+
+      <div class="weeknav">
+        <button class="navbtn" id="prev" aria-label="Προηγούμενη εβδομάδα">‹</button>
+        <div class="wk"><div class="range" id="wRange"></div><div class="tot" id="wTotal"></div></div>
+        <button class="navbtn" id="next" aria-label="Επόμενη εβδομάδα">›</button>
+      </div>
+
+      <ul class="days" id="days"></ul>
+      <button class="todaylink" id="todayBtn" hidden>Πίσω στη σημερινή εβδομάδα</button>
+    </section>
+
+    <section id="tab-months" hidden>
+      <div class="card owe">
+        <div class="label">Χρωστάμε</div>
+        <div class="nums">
+          <div class="big" id="owe"></div>
+          <div class="sub" id="oweSub"></div>
+        </div>
+      </div>
+      <ul class="months" id="months"></ul>
+      <p class="note" id="rateNote"></p>
+    </section>
+  </main>
+
+  <nav class="tabs">
+    <button class="active" data-tab="week">Εβδομάδα</button>
+    <button data-tab="months">Μήνες</button>
+  </nav>
+
+  <div class="sheet" id="sheet">
+    <div class="backdrop" id="backdrop"></div>
+    <div class="panel" role="dialog" aria-modal="true">
+      <div class="grab"></div>
+      <div class="stitle" id="sTitle"></div>
+      <div class="chips" id="chips"></div>
+      <button class="clear" id="clearBtn">Δεν ήρθε (κενό)</button>
+      <label class="clabel" for="comment">Σχόλιο</label>
+      <div class="crow">
+        <input id="comment" maxlength="200" placeholder="π.χ. έφυγε νωρίτερα" enterkeyhint="done">
+        <button id="saveComment">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="loading" id="loading">Φόρτωση…</div>
+  <div class="keyscreen" id="keyscreen" hidden>
+    <h2>Σύνδεση</h2>
+    <p>Άνοιξε μία φορά τον προσωπικό σύνδεσμο που σου στάλθηκε, ή επικόλλησέ τον εδώ.</p>
+    <input id="keyInput" placeholder="Σύνδεσμος ή κλειδί" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button id="keyBtn">Σύνδεση</button>
+  </div>
+
+<script>
+const DAY = ['Κυριακή','Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο'];
+const MON = ['Ιανουάριος','Φεβρουάριος','Μάρτιος','Απρίλιος','Μάιος','Ιούνιος','Ιούλιος','Αύγουστος','Σεπτέμβριος','Οκτώβριος','Νοέμβριος','Δεκέμβριος'];
+const HOURS = Array.from({length:24}, (_, i) => (i + 1) / 2);
+const nf = new Intl.NumberFormat('el-GR', {maximumFractionDigits: 1});
+const ef = new Intl.NumberFormat('el-GR', {style: 'currency', currency: 'EUR'});
+
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const isoOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const ymOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+const short = d => `${d.getDate()}/${d.getMonth() + 1}`;
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const mondayOf = d => addDays(d, -((d.getDay() + 6) % 7));
+const hrs = h => `${nf.format(h)} ${h === 1 ? 'ώρα' : 'ώρες'}`;
+
+let S = {rate: 0, days: {}, paid: {}};
+let weekStart = mondayOf(new Date());
+let openIso = null, pending = 0, lastLoad = 0, tab = 'week';
+
+// ---------- επικοινωνία με το Sheet ----------
+const MOCK_MODE = location.protocol === 'file:' || location.hostname === 'localhost';
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+function readLink(str) {
+  const k = (str.match(/[#&?]k=([^&]+)/) || [])[1];
+  const u = (str.match(/[#&?]u=([^&]+)/) || [])[1];
+  if (k) store.set('ores_key', decodeURIComponent(k));
+  if (u) store.set('ores_api', decodeURIComponent(u));
+  return !!k;
+}
+if (readLink(location.hash)) history.replaceState(null, '', location.pathname);
+let KEY = store.get('ores_key') || '';
+const apiUrl = () => 'https://script.google.com/macros/s/' + (store.get('ores_api') || '') + '/exec';
+
+function needKey() {
+  KEY = ''; store.del('ores_key'); store.del('ores_cache');
+  $('loading').hidden = true;
+  $('keyscreen').hidden = false;
+}
+$('keyBtn').onclick = () => {
+  const v = $('keyInput').value.trim();
+  if (!v) return;
+  if (!readLink(v)) store.set('ores_key', v);
+  KEY = store.get('ores_key') || '';
+  $('keyscreen').hidden = true; lastLoad = 0; load(false);
+};
+
+async function call(name, ...args) {
+  if (MOCK_MODE) { await new Promise(r => setTimeout(r, 200)); return MOCK[name](...args); }
+  const body = {k: KEY};
+  if (name === 'getData') body.a = 'get';
+  else if (name === 'setHours') Object.assign(body, {a: 'hours', d: args[0], h: args[1]});
+  else if (name === 'setComment') Object.assign(body, {a: 'comment', d: args[0], c: args[1]});
+  else if (name === 'setPaid') Object.assign(body, {a: 'paid', m: args[0], v: args[1]});
+  const r = await fetch(apiUrl(), {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(body)});
+  const j = await r.json();
+  if (!j.ok) { if (j.error === 'unauthorized') needKey(); throw new Error(j.error); }
+  return j.data;
+}
+// δοκιμαστικά δεδομένα για προεπισκόπηση τοπικά
+const MOCK = {
+  getData() {
+    const days = {}, t = new Date();
+    for (let i = 1; i < 45; i++) {
+      const d = addDays(t, -i), wd = d.getDay();
+      if (wd !== 0 && wd !== 6 && i % 4 !== 0) days[isoOf(d)] = {h: [6, 7, 7.5, 8, 5.5][i % 5], c: i === 2 ? 'έφυγε νωρίτερα' : ''};
+    }
+    const prevM = new Date(t.getFullYear(), t.getMonth() - 1, 1);
+    const prevM2 = new Date(t.getFullYear(), t.getMonth() - 2, 1);
+    return {rate: 6, days, paid: {[ymOf(prevM2)]: true, [ymOf(prevM)]: false}};
+  },
+  setHours: () => true, setComment: () => true, setPaid: () => true
+};
+
+async function load(silent) {
+  if (pending) return;
+  if (!MOCK_MODE && (!KEY || !store.get('ores_api'))) { needKey(); return; }
+  if (MOCK_MODE && lastLoad) { render(); return; }
+  $('refresh').classList.add('spin');
+  if (!silent && !lastLoad) $('loading').hidden = false;
+  try {
+    S = await call('getData');
+    lastLoad = Date.now();
+    store.set('ores_cache', JSON.stringify(S));
+    render();
+  } catch (e) {
+    toast('Δεν φόρτωσαν τα δεδομένα');
+  } finally {
+    $('loading').hidden = true;
+    $('refresh').classList.remove('spin');
+  }
+}
+
+// ---------- υπολογισμοί ----------
+function monthTotals() {
+  const t = {};
+  for (const [k, v] of Object.entries(S.days)) {
+    if (v && v.h) t[k.slice(0, 7)] = (t[k.slice(0, 7)] || 0) + v.h;
+  }
+  return t;
+}
+
+// ---------- εμφάνιση ----------
+function render() { renderWeek(); renderMonths(); }
+
+function renderWeek() {
+  const now = new Date(), tIso = isoOf(now);
+  const thu = addDays(weekStart, 3);
+  const tot = monthTotals()[ymOf(thu)] || 0;
+  $('mLabel').textContent = `${MON[thu.getMonth()]} ${thu.getFullYear()}`;
+  $('mHours').textContent = nf.format(tot);
+  $('mUnit').textContent = tot === 1 ? 'ώρα' : 'ώρες';
+  $('mEuro').textContent = ef.format(tot * S.rate);
+  $('wRange').textContent = `${short(weekStart)} έως ${short(addDays(weekStart, 6))}`;
+
+  let wt = 0;
+  const ul = $('days');
+  ul.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(weekStart, i), k = isoOf(d), v = S.days[k] || {}, wd = d.getDay();
+    if (v.h) wt += v.h;
+    const li = document.createElement('li');
+    li.className = 'day' + (wd === 0 || wd === 6 ? ' we' : '') + (k === tIso ? ' today' : '') + (k > tIso ? ' future' : '');
+    li.innerHTML =
+      `<div class="dleft"><div class="dname">${DAY[wd]}</div><div class="ddate">${short(d)}${k === tIso ? ' · <b>σήμερα</b>' : ''}</div></div>` +
+      `<div class="dcomment"></div>` +
+      `<div class="dhours${v.h ? '' : ' empty'}">${v.h ? `<span class="pill">${hrs(v.h)}</span>` : (k > tIso ? '' : '+')}</div>`;
+    li.querySelector('.dcomment').textContent = v.c || '';
+    if (k <= tIso) li.onclick = () => openSheet(k, d);
+    ul.appendChild(li);
+  }
+  $('wTotal').textContent = `Εβδομάδα: ${hrs(wt)}`;
+  const cur = mondayOf(now);
+  $('next').disabled = weekStart >= cur;
+  $('todayBtn').hidden = +weekStart === +cur;
+}
+
+function renderMonths() {
+  const t = monthTotals(), cur = ymOf(new Date());
+  const keys = [...new Set([...Object.keys(t), cur])].sort().reverse();
+  let owe = 0, oweN = 0;
+  const ul = $('months');
+  ul.innerHTML = '';
+  for (const ym of keys) {
+    const h = t[ym] || 0, paid = !!S.paid[ym], eur = h * S.rate;
+    if (!paid && h > 0) { owe += eur; oweN++; }
+    const [y, m] = ym.split('-').map(Number);
+    const li = document.createElement('li');
+    li.className = 'month';
+    li.innerHTML =
+      `<div class="mleft"><div class="mname">${MON[m - 1]}</div><div class="msub">${ym === cur ? 'τρέχων · ' : `${y} · `}${hrs(h)}</div></div>` +
+      `<div class="meur">${ef.format(eur)}</div>` +
+      `<button class="paid ${paid ? 'yes' : 'no'}"${h === 0 && !paid ? ' disabled' : ''}>${paid ? 'Πληρώθηκε ✓' : 'Απλήρωτο'}</button>`;
+    li.querySelector('button').onclick = () => togglePaid(ym);
+    ul.appendChild(li);
+  }
+  $('owe').textContent = ef.format(owe);
+  $('oweSub').textContent = oweN ? `${oweN} ${oweN === 1 ? 'μήνας' : 'μήνες'}` : 'Όλα εξοφλημένα';
+  $('rateNote').textContent = `Αμοιβή ${ef.format(S.rate)} ανά ώρα. Αλλάζει από το Sheet, δίπλα στην «Αμοιβή».`;
+}
+
+// ---------- ενέργειες ----------
+async function save(apply, revert, name, args, okMsg) {
+  apply(); render(); pending++;
+  try { await call(name, ...args); store.set('ores_cache', JSON.stringify(S)); toast(okMsg); }
+  catch (e) { revert(); render(); toast('Δεν αποθηκεύτηκε, δοκίμασε ξανά'); }
+  finally { pending--; }
+}
+
+function saveHours(k, h) {
+  const prev = S.days[k] ? {...S.days[k]} : null;
+  save(() => { S.days[k] = {...(S.days[k] || {c: ''}), h}; },
+       () => { if (prev) S.days[k] = prev; else delete S.days[k]; },
+       'setHours', [k, h], h === null ? 'Καθαρίστηκε' : 'Αποθηκεύτηκε');
+}
+
+function saveComment(k, c) {
+  const prev = S.days[k] ? {...S.days[k]} : null;
+  save(() => { S.days[k] = {...(S.days[k] || {h: null}), c}; },
+       () => { if (prev) S.days[k] = prev; else delete S.days[k]; },
+       'setComment', [k, c], 'Το σχόλιο αποθηκεύτηκε');
+}
+
+function togglePaid(ym) {
+  const prev = !!S.paid[ym];
+  save(() => { S.paid[ym] = !prev; }, () => { S.paid[ym] = prev; },
+       'setPaid', [ym, !prev], !prev ? 'Σημειώθηκε ως πληρωμένος' : 'Σημειώθηκε ως απλήρωτος');
+}
+
+// ---------- παράθυρο ημέρας ----------
+function openSheet(k, d) {
+  openIso = k;
+  const v = S.days[k] || {};
+  $('sTitle').innerHTML = `${DAY[d.getDay()]} <span>${short(d)}</span>`;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', Number(c.dataset.h) === v.h));
+  $('comment').value = v.c || '';
+  $('sheet').classList.add('open');
+}
+function closeSheet() { $('sheet').classList.remove('open'); openIso = null; $('comment').blur(); }
+
+function commitComment() {
+  if (!openIso) return;
+  const k = openIso, c = $('comment').value.trim();
+  if (c !== ((S.days[k] || {}).c || '')) saveComment(k, c);
+  closeSheet();
+}
+
+HOURS.forEach(h => {
+  const b = document.createElement('button');
+  b.className = 'chip'; b.dataset.h = h; b.textContent = nf.format(h);
+  b.onclick = () => { const k = openIso; const c = $('comment').value.trim();
+    if (k && c !== ((S.days[k] || {}).c || '')) saveComment(k, c);
+    if (k) saveHours(k, h); closeSheet(); };
+  $('chips').appendChild(b);
+});
+$('clearBtn').onclick = () => { if (openIso) saveHours(openIso, null); closeSheet(); };
+$('saveComment').onclick = commitComment;
+$('comment').addEventListener('keydown', e => { if (e.key === 'Enter') commitComment(); });
+$('backdrop').onclick = closeSheet;
+
+// ---------- πλοήγηση ----------
+function shiftWeek(n) {
+  const cand = addDays(weekStart, 7 * n);
+  if (cand > mondayOf(new Date())) return;
+  weekStart = cand; renderWeek();
+}
+$('prev').onclick = () => shiftWeek(-1);
+$('next').onclick = () => shiftWeek(1);
+$('todayBtn').onclick = () => { weekStart = mondayOf(new Date()); renderWeek(); };
+$('refresh').onclick = () => load(true);
+
+let sx = null, sy = null;
+$('days').addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive: true});
+$('days').addEventListener('touchend', e => {
+  if (sx === null) return;
+  const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+  sx = null;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) shiftWeek(dx < 0 ? 1 : -1);
+});
+
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  tab = b.dataset.tab;
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('active', x === b));
+  $('tab-week').hidden = tab !== 'week';
+  $('tab-months').hidden = tab !== 'months';
+  window.scrollTo(0, 0);
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - lastLoad > 20000) load(true);
+});
+
+let tt;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+(function boot() {
+  const cached = store.get('ores_cache');
+  if (cached && KEY) { try { S = JSON.parse(cached); render(); $('loading').hidden = true; } catch (e) {} }
+  load(!!(cached && KEY));
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
